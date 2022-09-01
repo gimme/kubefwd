@@ -123,6 +123,27 @@ func (p pingingDialer) Dial(protocols ...string) (httpstream.Connection, string,
 	return streamConn, streamProtocolVersion, dialErr
 }
 
+func (pfo *PortForwardOpts) SetUpHosts() error {
+	defer close(pfo.DoneChan)
+
+	pfStopChannel := make(chan struct{}, 1)
+
+	pfo.AddHosts()
+
+	go func() {
+		<-pfo.ManualStopChan
+		pfo.removeHosts()
+		pfo.removeInterfaceAlias()
+		close(pfStopChannel)
+	}()
+
+	select {
+	case <-pfStopChannel:
+	}
+
+	return nil
+}
+
 // PortForward does the port-forward for a single pod.
 // It is a blocking call and will return when an error occurred
 // or after a cancellation signal has been received.

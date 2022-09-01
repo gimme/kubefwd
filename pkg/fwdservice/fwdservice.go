@@ -74,6 +74,8 @@ type ServiceFWD struct {
 
 	ForwardConfigurationPath string   // file path to IP reservation configuration
 	ForwardIPReservations    []string // cli passed IP reservations
+
+	SkipForwarding bool
 }
 
 /**
@@ -297,13 +299,21 @@ func (svcFwd *ServiceFWD) LoopPodsToForward(pods []v1.Pod, includePodNameInHost 
 				svcName,
 			)
 
-			log.Printf("Port-Forward: %16s %s:%d to pod %s:%s\n",
-				localIp.String(),
-				serviceHostName,
-				port.Port,
-				pod.Name,
-				podPort,
-			)
+			if svcFwd.SkipForwarding {
+				log.Printf("Local-Host: %18s %s:%d\n",
+					localIp.String(),
+					serviceHostName,
+					port.Port,
+				)
+			} else {
+				log.Printf("Port-Forward: %16s %s:%d to pod %s:%s\n",
+					localIp.String(),
+					serviceHostName,
+					port.Port,
+					pod.Name,
+					podPort,
+				)
+			}
 
 			pfo := &fwdport.PortForwardOpts{
 				Out:        publisher,
@@ -330,7 +340,12 @@ func (svcFwd *ServiceFWD) LoopPodsToForward(pods []v1.Pod, includePodNameInHost 
 			// Fire and forget. The stopping is done in the service.Shutdown() method.
 			go func() {
 				svcFwd.AddServicePod(pfo)
-				if err := pfo.PortForward(); err != nil {
+				if svcFwd.SkipForwarding {
+					err = pfo.SetUpHosts()
+				} else {
+					err = pfo.PortForward()
+				}
+				if err != nil {
 					select {
 					case <-pfo.ManualStopChan: // if shutdown was given, we don't bother with the error.
 					default:

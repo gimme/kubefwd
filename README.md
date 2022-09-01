@@ -159,6 +159,7 @@ Flags:
   -n, --namespace strings       Specify a namespace. Specify multiple namespaces by duplicating this argument.
   -r, --reserve strings         Specify an IP reservation. Specify multiple reservations by duplicating this argument.
   -l, --selector string         Selector (label query) to filter on; supports '=', '==', and '!=' (e.g. -l key1=value1,key2=value2).
+  -s, --skip-forwarding strings Specify a service that you will run locally and wish to skip the port forwarding of.
   -v, --verbose                 Verbose output.
 ```
 
